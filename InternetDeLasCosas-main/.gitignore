@@ -1,0 +1,68 @@
+# PlatformIO
+.pio/
+.vscode/
+.platformio/
+.clang_complete
+.gcc-flags.json
+.idea
+*.pro.user
+*.autosave
+
+# Build artifacts
+build/
+dist/
+*.o
+*.a
+*.so
+*.dylib
+*.dll
+*.exe
+*.lib
+*.elf
+*.hex
+*.bin
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Compiler output
+*.d
+*.out
+*.asm
+
+# Debugging
+*.pdb
+gdb_out
+output.txt
+
+# CMake
+cmake-build-*/
+CMakeLists.txt.user
+CMakeUserPresets.json
+
+# Node (if used)
+node_modules/
+npm-debug.log
+
+# Python (if used)
+__pycache__/
+*.py[cod]
+*.egg-info/
+venv/
+env/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+*~
