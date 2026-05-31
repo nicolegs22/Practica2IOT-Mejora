@@ -11,6 +11,9 @@ Sensor::Sensor(const char* ssid, const char* password, const char* ip, int port,
 
 void Sensor::begin() {
     Serial.begin(115200);
+    delay(1000);
+    Serial.println();
+    Serial.println("[SENSOR] Iniciando...");
 
     pinMode(trigPin, OUTPUT);
     pinMode(echoPin, INPUT);
@@ -45,14 +48,32 @@ void Sensor::loop() {
 }
 
 void Sensor::connectWiFi() {
+    WiFi.mode(WIFI_STA);
+    WiFi.setSleep(false);
+
+    Serial.print("[WiFi] Conectando a ");
+    Serial.println(ssid);
+
     WiFi.begin(ssid, password);
     while (WiFi.status() != WL_CONNECTED) {
         delay(1000);
-        Serial.println("Connecting to WiFi...");
+        Serial.print(".");
     }
+
+    Serial.print("\n[WiFi] Conectado. IP del ESP32: ");
+    Serial.println(WiFi.localIP());
+    Serial.print("[WiFi] Gateway: ");
+    Serial.println(WiFi.gatewayIP());
 }
 
 void Sensor::connectServer() {
+    client.stop();
+
+    Serial.print("[SENSOR] Conectando a servidor ");
+    Serial.print(serverIP);
+    Serial.print(":");
+    Serial.println(serverPort);
+
     if (client.connect(serverIP, serverPort)) {
         StaticJsonDocument<384> doc;
         doc["message_type"] = "register";
@@ -65,6 +86,9 @@ void Sensor::connectServer() {
         String json;
         serializeJson(doc, json);
         client.println(json);
+        Serial.println("[SENSOR] Registrado con el servidor");
+    } else {
+        Serial.println("[SENSOR] Error de conexion");
     }
 }
 

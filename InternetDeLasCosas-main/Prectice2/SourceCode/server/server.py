@@ -18,6 +18,12 @@ class IoTServer:
         self.server = self.server_socket
         self.client_manager = ClientManager()
         self.gestor = self.client_manager
+        self.current_led_rgb = None
+        self.current_led_duration = None
+        self.pending_led_rgb = None
+        self.pending_led_duration = None
+        self.pending_led_count = 0
+        self.required_stable_readings = 3
 
     def start(self):
         self.server_socket.bind((self.host, self.port))
@@ -71,6 +77,7 @@ class IoTServer:
                 Protocol.DEVICE_TYPE,
                 Protocol.LEGACY_DEVICE_TYPE,
             )
+            normalized_device_type = Protocol.normalize_device_type(device_type)
             supports_modern_protocol = (
                 Protocol.MESSAGE_TYPE in message or
                 Protocol.DEVICE_TYPE in message
@@ -82,6 +89,16 @@ class IoTServer:
                 device_type,
                 supports_modern_protocol,
             )
+            if (
+                normalized_device_type == Protocol.ACTUATOR and
+                self.current_led_rgb is not None
+            ):
+                self.send_led_command(
+                    client_socket,
+                    supports_modern_protocol,
+                    self.current_led_rgb,
+                    self.current_led_duration,
+                )
 
         elif message_type == Protocol.SENSOR_DATA:
             distance = Protocol.get_value(
@@ -97,7 +114,7 @@ class IoTServer:
             color, rgb, duration = self.led_state_for_distance(distance)
             print(f"{color:8} | {distance:5.1f} cm")
 
-            self.send_to_actuators(rgb, duration)
+            self.update_led_state(rgb, duration)
 
     @staticmethod
     def led_state_for_distance(distance):
@@ -122,6 +139,47 @@ class IoTServer:
                 client.socket.send((json.dumps(command) + "\n").encode())
             except OSError:
                 pass
+
+    def update_led_state(self, rgb, duration):
+        if rgb == self.current_led_rgb:
+            self.pending_led_rgb = None
+            self.pending_led_duration = None
+            self.pending_led_count = 0
+            return
+
+        if self.current_led_rgb is None:
+            self.current_led_rgb = rgb
+            self.current_led_duration = duration
+            self.send_to_actuators(rgb, duration)
+            return
+
+        if rgb == self.pending_led_rgb:
+            self.pending_led_count += 1
+        else:
+            self.pending_led_rgb = rgb
+            self.pending_led_duration = duration
+            self.pending_led_count = 1
+
+        if self.pending_led_count < self.required_stable_readings:
+            return
+
+        self.current_led_rgb = self.pending_led_rgb
+        self.current_led_duration = self.pending_led_duration
+        self.pending_led_rgb = None
+        self.pending_led_duration = None
+        self.pending_led_count = 0
+        self.send_to_actuators(self.current_led_rgb, self.current_led_duration)
+
+    def send_led_command(self, client_socket, supports_modern_protocol, rgb, duration):
+        if supports_modern_protocol:
+            command = Protocol.led_command(rgb, duration)
+        else:
+            command = Protocol.legacy_led_command(rgb, duration)
+
+        try:
+            client_socket.send((json.dumps(command) + "\n").encode())
+        except OSError:
+            pass
 
     # Backward-compatible method names from the previous Spanish API.
     iniciar = start

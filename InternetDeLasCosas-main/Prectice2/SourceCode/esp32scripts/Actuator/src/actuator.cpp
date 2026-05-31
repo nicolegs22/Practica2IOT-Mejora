@@ -9,13 +9,21 @@ Actuator::Actuator(const char* ssid, const char* password, const char* ip, int p
     this->pinR = r;
     this->pinG = g;
     this->pinB = b;
+    this->currentR = -1;
+    this->currentG = -1;
+    this->currentB = -1;
 }
 
 void Actuator::begin() {
     Serial.begin(115200);
+    delay(1000);
+    Serial.println();
+    Serial.println("[ACTUADOR] Iniciando...");
+
     pinMode(pinR, OUTPUT);
     pinMode(pinG, OUTPUT);
     pinMode(pinB, OUTPUT);
+    applyLedColor(0, 0, 0);
     
     connectWiFi();
     connectServer();
@@ -37,15 +45,32 @@ void Actuator::loop() {
 }
 
 void Actuator::connectWiFi() {
+    WiFi.mode(WIFI_STA);
+    WiFi.setSleep(false);
+
+    Serial.print("[WiFi] Conectando a ");
+    Serial.println(ssid);
+
     WiFi.begin(ssid, password);
     while (WiFi.status() != WL_CONNECTED) {
         delay(500);
         Serial.print(".");
     }
-    Serial.println("\n[WiFi] Connected");
+
+    Serial.print("\n[WiFi] Conectado. IP del ESP32: ");
+    Serial.println(WiFi.localIP());
+    Serial.print("[WiFi] Gateway: ");
+    Serial.println(WiFi.gatewayIP());
 }
 
 void Actuator::connectServer() {
+    client.stop();
+
+    Serial.print("[ACTUADOR] Conectando a servidor ");
+    Serial.print(serverIP);
+    Serial.print(":");
+    Serial.println(serverPort);
+
     if (client.connect(serverIP, serverPort)) {
         StaticJsonDocument<384> doc;
         doc["message_type"] = "register";
@@ -58,9 +83,9 @@ void Actuator::connectServer() {
         String json;
         serializeJson(doc, json);
         client.println(json);
-        Serial.println("[ACTUATOR] Registered with server");
+        Serial.println("[ACTUADOR] Registrado con el servidor");
     } else {
-        Serial.println("[ACTUATOR] Connection error");
+        Serial.println("[ACTUADOR] Error de conexion");
     }
 }
 
@@ -83,20 +108,32 @@ void Actuator::processCommand(String message) {
         int r = doc["rgb"][0];
         int g = doc["rgb"][1];
         int b = doc["rgb"][2];
-        int duration = doc["duration"].is<int>() ? doc["duration"].as<int>() : doc["duracion"].as<int>();
 
-        analogWrite(pinR, r);
-        analogWrite(pinG, g);
-        analogWrite(pinB, b);
-        
-        delay(duration);
-        
-        analogWrite(pinR, 0);
-        analogWrite(pinG, 0);
-        analogWrite(pinB, 0);
+        applyLedColor(r, g, b);
 
         sendConfirmation("leds");
     }
+}
+
+void Actuator::applyLedColor(int r, int g, int b) {
+    if (r == currentR && g == currentG && b == currentB) {
+        return;
+    }
+
+    digitalWrite(pinR, r > 0 ? HIGH : LOW);
+    digitalWrite(pinG, g > 0 ? HIGH : LOW);
+    digitalWrite(pinB, b > 0 ? HIGH : LOW);
+
+    currentR = r;
+    currentG = g;
+    currentB = b;
+
+    Serial.print("[ACTUADOR] LED fijo RGB: ");
+    Serial.print(r);
+    Serial.print(",");
+    Serial.print(g);
+    Serial.print(",");
+    Serial.println(b);
 }
 
 void Actuator::sendConfirmation(String command) {

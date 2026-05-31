@@ -5,7 +5,7 @@ Actuator actuator(
     "melina5186804",
     "192.168.0.4",
     5000,
-    13, 12, 14
+    32, 25, 26
 );
 
 void setup() {
