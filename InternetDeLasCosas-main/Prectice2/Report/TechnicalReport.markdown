@@ -16,9 +16,9 @@ Los requerimientos funcionales describen las acciones principales que realiza el
 - El sensor debe enviar al servidor la distancia medida mediante comunicación TCP.
 - El servidor debe recibir la información enviada por el sensor.
 - El servidor debe procesar la distancia recibida y determinar la acción correspondiente según el rango medido.
-- El servidor debe enviar al actuador un comando para encender el LED RGB con el color correspondiente o apagarlo cuando la distancia esté fuera del rango definido.
+- El servidor debe enviar al actuador un comando para encender los leds con el color correspondiente o apagarlo cuando la distancia esté fuera del rango definido.
 - El actuador ESP32 debe registrarse en el servidor como `actuator`.
-- El actuador debe recibir comandos desde el servidor y ejecutar la acción sobre el LED RGB.
+- El actuador debe recibir comandos desde el servidor y ejecutar la acción sobre los led tomando en cuenta el color correspondiente .
 - El actuador debe mantener el último estado recibido hasta que el servidor envíe un nuevo comando.
 - El flujo funcional del sistema debe ser: el sensor mide la distancia, envía los datos al servidor, el servidor procesa la información, el servidor envía un comando al actuador y el actuador enciende o apaga el LED RGB.
 - El servidor debe sincronizar a un actuador recién conectado con el último estado de LED calculado.
